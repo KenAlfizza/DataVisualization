@@ -1,5 +1,13 @@
+import pandas as pd
+def get_media_name_en_by_id(data, id):
+    """Returns the english name of media"""
+    if id < data.shape[0]:
+        return data['Name (English)'][id]
 
-def find_possible_regions(data):
+    return ''
+
+
+def get_possible_regions(data):
     """Returns the possible region of focus from the data"""
     regions = set()
     for i in data['Region of Focus']:
@@ -8,7 +16,7 @@ def find_possible_regions(data):
     return regions
 
 
-def find_media_ids_by_region(data, region):
+def get_media_ids_by_region(data, region):
     """Returns the id of media with the region of focus"""
     media_ids = []
     for i in range(0, data.shape[0]):
@@ -18,7 +26,7 @@ def find_media_ids_by_region(data, region):
     return media_ids
 
 
-def find_possible_parent_entity(data):
+def get_parent_entities(data):
     """Returns the possible region of focus from the data"""
     parents = set()
     for i in data['Parent entity (English)']:
@@ -27,7 +35,27 @@ def find_possible_parent_entity(data):
     return parents
 
 
-def find_media_ids_by_parent_entity(data, parent):
+def get_parent_entity_regions_of_focus(data, parent):
+    regions = []
+    for i in range(0, data.shape[0]):
+        if data['Parent entity (English)'][i] == parent:
+            if data['Region of Focus'][i] not in regions:
+                regions.append(data['Region of Focus'][i])
+
+    print(regions)
+    return regions
+
+
+def get_region_ammount(data, region):
+    """Return the amount of state media for a given region"""
+    count = 0
+    for i in range(0, data.shape[0]):
+        if data['Region of Focus'][i] == region:
+            count += 1
+    return count
+
+
+def get_media_ids_by_parent_entity(data, parent):
     """Returns the id of media with the region of focus"""
     media_ids = []
     for i in range(0, data.shape[0]):
@@ -37,7 +65,7 @@ def find_media_ids_by_parent_entity(data, parent):
     return media_ids
 
 
-def find_possible_entity_owner(data):
+def get_possible_entity_owner(data):
     """Returns the possible region of focus from the data"""
     owners = set()
     for i in data['Entity owner (English)']:
@@ -46,7 +74,8 @@ def find_possible_entity_owner(data):
     return owners
 
 
-def find_media_ids_by_entity_owner(data, ownner):
+
+def get_media_ids_by_entity_owner(data, ownner):
     """Returns the id of media with the region of focus"""
     media_ids = []
     for i in range(0, data.shape[0]):
@@ -56,7 +85,7 @@ def find_media_ids_by_entity_owner(data, ownner):
     return media_ids
 
 
-def find_possible_language(data):
+def get_possible_language(data):
     """Returns the possible region of focus from the data"""
     language = set()
     for i in data['Language']:
@@ -65,7 +94,7 @@ def find_possible_language(data):
     return language
 
 
-def find_media_ids_by_languge(data, language):
+def get_media_ids_by_languge(data, language):
     """Returns the id of media with the region of focus"""
     media_ids = []
     for i in range(0, data.shape[0]):
@@ -80,3 +109,39 @@ def sort_followers(data, platform, ascending):
     data[platform].replace(',', '')
     return data[platform].sort_values(ascending=ascending)
 
+
+def categorize_parent_independent_others(data: pd.DataFrame, other_limit) -> pd.DataFrame:
+    """Returns the dataframe consists of:
+        - Large parent media with media > other_limit
+        - Other parent media with media < other_limit but > 1
+        - Independent parent media with media == 1
+    """
+    values = data['value'].tolist()
+    names = data['name'].tolist()
+
+    # Finding the amount of independent and other media and remove them from the lists
+    independent = 0
+    others = 0
+    removed_index = []
+    for i in range(0, len(values)):
+        if values[i] == 1:
+            independent += 1
+            removed_index.append(i)
+        elif 1 < values[i] <= other_limit:
+            others += 1
+            removed_index.append(i)
+
+    # Remove media and its amount from the lists
+    removed_index.reverse()
+    for i in removed_index:
+        values.pop(i)
+        names.pop(i)
+
+    # Appending independent and others to the lists
+    names.append('Independent')
+    values.append(independent)
+    names.append('Others')
+    values.append(others)
+
+    data = pd.DataFrame(data={'name': names, 'value': values}, columns=['name', 'value'])
+    return data
